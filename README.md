@@ -29,6 +29,7 @@ vous pourrez modifier votre propre channel sans danger pour le serveur.
 Pour pouvoir inviter le bot sur votre serveur, vous pouvez passer 
 par ce [lien](https://discord.com/oauth2/authorize?client_id=764311685355274251&scope=bot&permissions=16777232)
 
+---
 <div>Icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
 
 Credits of images used in this readme can be found [here](.images/README.md)
