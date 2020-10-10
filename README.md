@@ -1,6 +1,6 @@
 # PVC - Private VoIP Channels discord bot
 
-![EN](.images/greatbritainflag.png)
+## ![EN](.images/greatbritainflag.png) English
 
 Here is the source code of the `Private VoIP Channels#7454` Bot. 
 
@@ -15,7 +15,7 @@ To be able to invite the bot on your server, you can pass
 by this [link](https://discord.com/oauth2/authorize?client_id=764311685355274251&scope=bot&permissions=16777232)
 
 
-![FR](.images/franceflag.png)
+## ![FR](.images/franceflag.png) Français
 
 Voici le code source du Bot `Private VoIP Channels#7454`. 
 
