@@ -24,21 +24,28 @@ bdd = {}
 @bot.event
 async def on_ready():
     update_bdd(bdd)
+
     print(f"Bot logged as {bot.user.name}")
     for guild in bot.guilds:
         if str(guild.id) not in bdd.keys():
             bdd[str(guild.id)] = {"main": None, "channels": {}}
     game = discord.Game(f"Manage {len(bot.guilds)} servers")
     await bot.change_presence(activity=game)
+
     update_json(bdd)
 
 
 @bot.event
 async def on_guild_join(guild):
     update_bdd(bdd)
-    bdd[str(guild.id)] = {"main": None, "channels": {}}
+
+    bdd[str(guild.id)] = {
+        "main": None,
+        "channels": {}
+    }
     game = discord.Game(f"Manage {len(bot.guilds)} servers")
     await bot.change_presence(activity=game)
+
     update_json(bdd)
 
 
@@ -76,21 +83,28 @@ async def _help(ctx):
 @commands.has_permissions(administrator=True)
 async def setchannel(ctx):
     content = ctx.message.content.split()
-    if len(content) > 1:
-        if content[1].isdigit():
-            chan = bot.get_channel(int(content[1]))
-            if chan:
-                if isinstance(chan, discord.VoiceChannel):
-                    bdd[str(ctx.guild.id)]['main'] = chan.id
-                    await ctx.send("Main channel set.")
-                else:
-                    await ctx.send("Please use a Vocal channel id.")
-            else:
-                await ctx.send("Please use a valid id.")
-        else:
-            await ctx.send("Please use a valid id.")
-    else:
+
+    if len(content) <= 1:
         await ctx.send("Please specify a channel id.")
+        return
+
+    if not content[1].isdigit():
+        await ctx.send("Please use a valid id.")
+        return
+
+    channel = bot.get_channel(int(content[1]))
+
+    if not channel:
+        await ctx.send("Please use a valid id.")
+        return
+
+    if not isinstance(channel, discord.VoiceChannel):
+        await ctx.send("Please use a voice channel id.")
+        return
+
+    bdd[str(ctx.guild.id)]['main'] = channel.id
+    await ctx.send("Main channel set.")
+
     update_json(bdd)
     update_bdd(bdd)
 
@@ -100,6 +114,7 @@ async def setchannel(ctx):
 async def unsetchannel(ctx):
     bdd[str(ctx.guild.id)]['main'] = None
     await ctx.send("Main channel reset.")
+
     update_json(bdd)
     update_bdd(bdd)
 
@@ -112,18 +127,21 @@ def help_embed(member):
     embed.set_thumbnail(url=f"https://cdn.discordapp.com/avatars/{member.id}/{member.avatar}.png?size=1024")
     embed.add_field(
         name="__owner__",
-        value="**Description:** allows you to change the owner\n**Usage:**: `set owner [mention]`",
+        value="**Description:** allows you to change the owner\n"
+              "**Usage:**: `set owner [mention]`",
         inline=False
     )
     embed.add_field(
         name="__name__",
-        value="**Description:** allows you to change the channel's name\n**Usage:**: `set name [name]`",
+        value="**Description:** allows you to change the channel's name\n"
+              "**Usage:**: `set name [name]`",
         inline=False
     )
     embed.add_field(
         name="__places__",
         value="**Description:** allows you to change the number of places in the channel.\n"
-              "Take a number between 0 to 99, 0 mean no limit.\n**Usage:**: `set places [int]`",
+              "Take a number between 0 to 99, 0 mean no limit.\n"
+              "**Usage:**: `set places [int]`",
         inline=False
     )
     embed.add_field(
@@ -134,7 +152,8 @@ def help_embed(member):
     )
     embed.add_field(
         name="__help__",
-        value="**Description:** Show you this embed\n**Usage:**: `set help`",
+        value="**Description:** Show you this embed\n"
+              "**Usage:**: `set help`",
         inline=False
     )
     return embed
@@ -147,50 +166,62 @@ async def set(ctx):
     member_id = ctx.author.id
     guild_id = str(ctx.guild.id)
     keywords = ["private", "public", "owner", "places", "name"]
-    if voice:
-        chan = voice.channel
-        voice = str(voice.channel.id)
-        if voice in bdd[guild_id]['channels'].keys():
-            if member_id == bdd[guild_id]['channels'][voice]["owner"]:
-                if len(content) > 1 and content[1] in keywords:
-                    if content[1] == 'name':
-                        if len(content) > 2:
-                            await chan.edit(name=" ".join(content[2:]))
-                            await ctx.message.channel.send("Name successfully changed.")
-                            bdd[guild_id]['channels'][voice]["name"] = " ".join(content[2:])
-                    elif content[1] == "owner" and len(ctx.message.mentions):
-                        bdd[guild_id]['channels'][voice]["owner"] = ctx.message.mentions[0].id
-                        await ctx.message.channel.send(f"Owner successfully changed to {ctx.message.mentions[0].name}.")
-                    elif content[1] == "places":
-                        if content[2].isdigit():
-                            if 0 <= int(content[2]) < 100:
-                                await chan.edit(user_limit=int(content[2]))
-                                await ctx.send("Number of places successfully changed.")
-                                bdd[guild_id]['channels'][voice]["places"] = int(content[2])
-                            else:
-                                await ctx.send("Please use a number between 0 and 99.")
-                        else:
-                            await ctx.send("Please use a number between 0 and 99.")
-                    elif content[1] == "public":
-                        await chan.set_permissions(ctx.guild.default_role, view_channel=True)
-                        await ctx.send("Channel defined as public.")
-                        bdd[guild_id]['channels'][voice]["public"] = True
-                    else:
-                        await chan.set_permissions(ctx.guild.default_role, view_channel=False)
-                        await ctx.send("Channel defined as private.")
-                        bdd[guild_id]['channels'][voice]["public"] = False
-                else:
-                    await ctx.send(embed=help_embed(ctx.author))
-            else:
-                await ctx.send("You don't have permission to do this !")
-        else:
-            await ctx.send('You must be in your voice channel.')
-    else:
+
+    if not voice:
         await ctx.send('You must be in your voice channel.')
+        return
+
+    chan = voice.channel
+    voice = str(voice.channel.id)
+
+    if not voice in bdd[guild_id]['channels'].keys():
+        await ctx.send('You must be in your voice channel.')
+        return
+
+    if member_id != bdd[guild_id]['channels'][voice]["owner"]:
+        await ctx.send("You don't have permission to do this !")
+        return
+
+    if len(content) <= 1 or content[1] not in keywords:
+        await ctx.send(embed=help_embed(ctx.author))
+        return
+
+    # subcommand handling is here
+    if content[1] == 'name' and len(content) > 2:
+        await chan.edit(name=" ".join(content[2:]))
+        await ctx.message.channel.send("Name successfully changed.")
+        bdd[guild_id]['channels'][voice]["name"] = " ".join(content[2:])
+
+    elif content[1] == "owner" and len(ctx.message.mentions):
+        bdd[guild_id]['channels'][voice]["owner"] = ctx.message.mentions[0].id
+        await ctx.message.channel.send(f"Owner successfully changed to {ctx.message.mentions[0].name}.")
+
+    elif content[1] == "places":
+        if not content[2].isdigit() or not 0 <= int(content[2]) < 100:
+            await ctx.send("Please use a number between 0 and 99.")
+            return
+
+        places_count = int(content[2])
+
+        await chan.edit(user_limit = places_count)
+        await ctx.send("Number of places successfully changed.")
+        bdd[guild_id]['channels'][voice]["places"] = places_count
+
+    elif content[1] == "public":
+        await chan.set_permissions(ctx.guild.default_role, view_channel=True)
+        await ctx.send("Channel defined as public.")
+        bdd[guild_id]['channels'][voice]["public"] = True
+
+    else:
+        await chan.set_permissions(ctx.guild.default_role, view_channel=False)
+        await ctx.send("Channel defined as private.")
+        bdd[guild_id]['channels'][voice]["public"] = False
+
     update_json(bdd)
     update_bdd(bdd)
 
 
+# TODO Refactor it
 @bot.event
 async def on_voice_state_update(member, before, after):
     if after.channel and after.channel.id == bdd[str(member.guild.id)]['main']:
@@ -208,6 +239,7 @@ async def on_voice_state_update(member, before, after):
             and not len(before.channel.members):
         bdd[str(member.guild.id)]['channels'].pop(str(before.channel.id))
         await before.channel.delete(reason='Last member leave')
+
     update_json(bdd)
     update_bdd(bdd)
 
