@@ -18,6 +18,11 @@ def update_bdd(db: dict):
             db[key] = value
 
 
+def get_token():
+    with open("config.json", "r") as file:
+        return json.load(file)["BOT_TOKEN"]
+
+
 bdd = {}
 
 
@@ -244,4 +249,5 @@ async def on_voice_state_update(member, before, after):
     update_bdd(bdd)
 
 
-bot.run(os.environ["BOT_TOKEN"])
+# TODO Handle invalid token error in a better way for the user
+bot.run(get_token())
