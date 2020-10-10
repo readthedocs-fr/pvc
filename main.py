@@ -64,6 +64,11 @@ async def _help(ctx):
         value="**Description:** reset the main channel.\n**Usage:**: `unsetchannel`",
         inline=False
     )
+    embed.add_field(
+        name="__set__",
+        value="**Description:** allows you to modify your channel once inside.\n**Usage:**: `set [arg]`",
+        inline=False
+    )
     await ctx.send(embed=embed)
 
 
@@ -124,7 +129,7 @@ def help_embed(member):
     embed.add_field(
         name="__public/private__",
         value="**Description:** allows you to define the channel as public or private\n"
-              "**Usage:**: `config private` or `set public`",
+              "**Usage:**: `set private` or `set public`",
         inline=False
     )
     embed.add_field(
@@ -148,10 +153,11 @@ async def set(ctx):
         if voice in bdd[guild_id]['channels'].keys():
             if member_id == bdd[guild_id]['channels'][voice]["owner"]:
                 if len(content) > 1 and content[1] in keywords:
-                    if content[1] == 'name' and len(content) > 2:
-                        await chan.edit(name=" ".join(content[2:]))
-                        await ctx.message.channel.send("Name successfully changed.")
-                        bdd[guild_id]['channels'][voice]["name"] = " ".join(content[2:])
+                    if content[1] == 'name':
+                        if len(content) > 2:
+                            await chan.edit(name=" ".join(content[2:]))
+                            await ctx.message.channel.send("Name successfully changed.")
+                            bdd[guild_id]['channels'][voice]["name"] = " ".join(content[2:])
                     elif content[1] == "owner" and len(ctx.message.mentions):
                         bdd[guild_id]['channels'][voice]["owner"] = ctx.message.mentions[0].id
                         await ctx.message.channel.send(f"Owner successfully changed to {ctx.message.mentions[0].name}.")
