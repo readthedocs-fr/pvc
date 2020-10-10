@@ -37,6 +37,8 @@ async def on_ready():
 async def on_guild_join(guild):
     update_bdd(bdd)
     bdd[str(guild.id)] = {"main": None, "channels": {}}
+    game = discord.Game(f"Manage {len(bot.guilds)} servers")
+    await bot.change_presence(activity=game)
     update_json(bdd)
 
 
