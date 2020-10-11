@@ -255,7 +255,7 @@ async def name(ctx):
 @name.error
 async def on_command_error(ctx,error):
     if isinstance(error, commands.CommandOnCooldown):
-        pass # use custom message
+        await ctx.send(f"You are going too fast ! Please wait {round(error.retry_after)} seconds before retry it.")
 
 # TODO Refactor it
 @bot.event
