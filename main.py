@@ -164,7 +164,7 @@ def help_embed(member):
     return embed
 
 
-@bot.command()
+@bot.group()
 async def set(ctx):
     content = ctx.message.content.split()
     voice = ctx.author.voice
@@ -190,12 +190,6 @@ async def set(ctx):
     if len(content) <= 1 or content[1] not in keywords:
         await ctx.send(embed=help_embed(ctx.author))
         return
-
-    # subcommand handling is here
-    if content[1] == 'name' and len(content) > 2:
-        await chan.edit(name=" ".join(content[2:]))
-        await ctx.message.channel.send("Name successfully changed.")
-        bdd[guild_id]['channels'][voice]["name"] = " ".join(content[2:])
 
     elif content[1] == "owner" and len(ctx.message.mentions):
         bdd[guild_id]['channels'][voice]["owner"] = ctx.message.mentions[0].id
@@ -225,6 +219,43 @@ async def set(ctx):
     update_json(bdd)
     update_bdd(bdd)
 
+@commands.cooldown(1,300,Commands.BucketType.member)
+@set.command()
+async def name(ctx):
+    content = ctx.message.content.split()
+    voice = ctx.author.voice
+    member_id = ctx.author.id
+    guild_id = str(ctx.guild.id)
+    keywords = ["private", "public", "owner", "places", "name"]
+
+    if not voice:
+        await ctx.send('You must be in your voice channel.')
+        return
+
+    chan = voice.channel
+    voice = str(voice.channel.id)
+
+    if not voice in bdd[guild_id]['channels'].keys():
+        await ctx.send('You must be in your voice channel.')
+        return
+
+    if member_id != bdd[guild_id]['channels'][voice]["owner"]:
+        await ctx.send("You don't have permission to do this !")
+        return
+
+    if len(content) <= 1 or content[1] not in keywords:
+        await ctx.send(embed=help_embed(ctx.author))
+        return
+
+    if len(content) > 2:
+        await chan.edit(name=" ".join(content[2:]))
+        await ctx.message.channel.send("Name successfully changed.")
+        bdd[guild_id]['channels'][voice]["name"] = " ".join(content[2:])
+
+@name.error
+async def on_command_error(ctx,error):
+    if isinstance(error, commands.CommandOnCooldown):
+        pass # use custom message
 
 # TODO Refactor it
 @bot.event
