@@ -191,6 +191,9 @@ async def set(ctx):
         await ctx.send(embed=help_embed(ctx.author))
         return
 
+    if content[1] == "name":
+    	return
+
     elif content[1] == "owner" and len(ctx.message.mentions):
         bdd[guild_id]['channels'][voice]["owner"] = ctx.message.mentions[0].id
         await ctx.message.channel.send(f"Owner successfully changed to {ctx.message.mentions[0].name}.")
@@ -224,16 +227,27 @@ async def set(ctx):
 async def name(ctx):
     content = ctx.message.content.split()
     voice = ctx.author.voice
+    member_id = ctx.author.id
     guild_id = str(ctx.guild.id)
+    
+    if not voice:
+    	return name.reset_cooldown(ctx)
 
     chan = voice.channel
     voice = str(voice.channel.id)
-
+    
+    if not voice in bdd[guild_id]['channels'].keys():
+        return name.reset_cooldown(ctx)
+    
+    if member_id != bdd[guild_id]['channels'][voice]["owner"]:
+        return name.reset_cooldown(ctx)
+    
     if len(content) > 2:
         await chan.edit(name=" ".join(content[2:]))
         await ctx.message.channel.send("Name successfully changed.")
         bdd[guild_id]['channels'][voice]["name"] = " ".join(content[2:])
-
+    else:
+    	return name.reset_cooldown(ctx)
 @name.error
 async def on_command_error(ctx,error):
     if isinstance(error, commands.CommandOnCooldown):
