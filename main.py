@@ -1,19 +1,24 @@
 import discord
 from discord.ext import commands
-import os
 import json
 
-bot = commands.Bot(command_prefix="$")
-bot.remove_command('help')
+bot = commands.Bot(command_prefix="$", help_command=None)
+
+
+def format_time(t: int):
+    minutes, seconds = divmod(t, 60)
+    if minutes:
+        return f"You are going too fast ! Please wait {minutes} minutes and {seconds} seconds before retry it."
+    return f"You are going too fast ! Please wait {seconds} seconds before retry it."
 
 
 def update_json(db: dict):
-    with open("bdd.json", "w") as file:
+    with open("data.json", "w") as file:
         json.dump(db, file, indent=4)
 
 
 def update_bdd(db: dict):
-    with open("bdd.json", "r") as file:
+    with open("data.json", "r") as file:
         for key, value in json.load(file).items():
             db[key] = value
 
@@ -23,35 +28,35 @@ def get_token():
         return json.load(file)["BOT_TOKEN"]
 
 
-bdd = {}
+data = {}
 
 
 @bot.event
 async def on_ready():
-    update_bdd(bdd)
+    update_bdd(data)
 
     print(f"Bot logged as {bot.user.name}")
     for guild in bot.guilds:
-        if str(guild.id) not in bdd.keys():
-            bdd[str(guild.id)] = {"main": None, "channels": {}}
+        if str(guild.id) not in data.keys():
+            data[str(guild.id)] = {"main": None, "channels": {}}
     game = discord.Game(f"Manage {len(bot.guilds)} servers")
     await bot.change_presence(activity=game)
 
-    update_json(bdd)
+    update_json(data)
 
 
 @bot.event
 async def on_guild_join(guild):
-    update_bdd(bdd)
+    update_bdd(data)
 
-    bdd[str(guild.id)] = {
+    data[str(guild.id)] = {
         "main": None,
         "channels": {}
     }
     game = discord.Game(f"Manage {len(bot.guilds)} servers")
     await bot.change_presence(activity=game)
 
-    update_json(bdd)
+    update_json(data)
 
 
 @bot.command(name="help")
@@ -107,21 +112,21 @@ async def setchannel(ctx):
         await ctx.send("Please use a voice channel id.")
         return
 
-    bdd[str(ctx.guild.id)]['main'] = channel.id
+    data[str(ctx.guild.id)]['main'] = channel.id
     await ctx.send("Main channel set.")
 
-    update_json(bdd)
-    update_bdd(bdd)
+    update_json(data)
+    update_bdd(data)
 
 
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def unsetchannel(ctx):
-    bdd[str(ctx.guild.id)]['main'] = None
+    data[str(ctx.guild.id)]['main'] = None
     await ctx.send("Main channel reset.")
 
-    update_json(bdd)
-    update_bdd(bdd)
+    update_json(data)
+    update_bdd(data)
 
 
 def help_embed(member):
@@ -164,8 +169,8 @@ def help_embed(member):
     return embed
 
 
-@bot.group()
-async def set(ctx):
+@bot.group(name="set")
+async def _set(ctx):
     content = ctx.message.content.split()
     voice = ctx.author.voice
     member_id = ctx.author.id
@@ -179,11 +184,11 @@ async def set(ctx):
     chan = voice.channel
     voice = str(voice.channel.id)
 
-    if not voice in bdd[guild_id]['channels'].keys():
+    if not voice in data[guild_id]['channels'].keys():
         await ctx.send('You must be in your voice channel.')
         return
 
-    if member_id != bdd[guild_id]['channels'][voice]["owner"]:
+    if member_id != data[guild_id]['channels'][voice]["owner"]:
         await ctx.send("You don't have permission to do this !")
         return
 
@@ -192,10 +197,10 @@ async def set(ctx):
         return
 
     if content[1] == "name":
-    	return
+        return
 
     elif content[1] == "owner" and len(ctx.message.mentions):
-        bdd[guild_id]['channels'][voice]["owner"] = ctx.message.mentions[0].id
+        data[guild_id]['channels'][voice]["owner"] = ctx.message.mentions[0].id
         await ctx.message.channel.send(f"Owner successfully changed to {ctx.message.mentions[0].name}.")
 
     elif content[1] == "places":
@@ -205,75 +210,79 @@ async def set(ctx):
 
         places_count = int(content[2])
 
-        await chan.edit(user_limit = places_count)
+        await chan.edit(user_limit=places_count)
         await ctx.send("Number of places successfully changed.")
-        bdd[guild_id]['channels'][voice]["places"] = places_count
+        data[guild_id]['channels'][voice]["places"] = places_count
 
     elif content[1] == "public":
         await chan.set_permissions(ctx.guild.default_role, view_channel=True)
         await ctx.send("Channel defined as public.")
-        bdd[guild_id]['channels'][voice]["public"] = True
+        data[guild_id]['channels'][voice]["public"] = True
 
     else:
         await chan.set_permissions(ctx.guild.default_role, view_channel=False)
         await ctx.send("Channel defined as private.")
-        bdd[guild_id]['channels'][voice]["public"] = False
+        data[guild_id]['channels'][voice]["public"] = False
 
-    update_json(bdd)
-    update_bdd(bdd)
+    update_json(data)
+    update_bdd(data)
 
-@commands.cooldown(1,300,commands.BucketType.member)
-@set.command()
+
+@commands.cooldown(1, 300, commands.BucketType.member)
+@_set.command()
 async def name(ctx):
     content = ctx.message.content.split()
     voice = ctx.author.voice
     member_id = ctx.author.id
     guild_id = str(ctx.guild.id)
-    
+
     if not voice:
-    	return name.reset_cooldown(ctx)
+        return name.reset_cooldown(ctx)
 
     chan = voice.channel
     voice = str(voice.channel.id)
-    
-    if not voice in bdd[guild_id]['channels'].keys():
+
+    if not voice in data[guild_id]['channels'].keys():
         return name.reset_cooldown(ctx)
-    
-    if member_id != bdd[guild_id]['channels'][voice]["owner"]:
+
+    if member_id != data[guild_id]['channels'][voice]["owner"]:
         return name.reset_cooldown(ctx)
-    
+
     if len(content) > 2:
         await chan.edit(name=" ".join(content[2:]))
         await ctx.message.channel.send("Name successfully changed.")
-        bdd[guild_id]['channels'][voice]["name"] = " ".join(content[2:])
+        data[guild_id]['channels'][voice]["name"] = " ".join(content[2:])
     else:
-    	return name.reset_cooldown(ctx)
+        return name.reset_cooldown(ctx)
+
+
 @name.error
-async def on_command_error(ctx,error):
+async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandOnCooldown):
-        await ctx.send(f"You are going too fast ! Please wait {round(error.retry_after)} seconds before retry it.")
+        await ctx.send(format_time(round(error.retry_after)))
+
 
 # TODO Refactor it
 @bot.event
 async def on_voice_state_update(member, before, after):
-    if after.channel and after.channel.id == bdd[str(member.guild.id)]['main']:
-        if (before.channel and before.channel.id != bdd[str(member.guild.id)]['main']) or not before.channel:
+    if after.channel and after.channel.id == data[str(member.guild.id)]['main']:
+        if (before.channel and before.channel.id != data[str(member.guild.id)]['main']) or not before.channel:
             category = bot.get_channel(after.channel.category_id)
             change = await member.guild.create_voice_channel(f"{member.name}'s channel", category=category)
             await member.move_to(change)
-            bdd[str(member.guild.id)]["channels"][str(change.id)] = {
+            data[str(member.guild.id)]["channels"][str(change.id)] = {
                 "owner": member.id,
                 "name": change.name,
                 "public": True,
                 "places": 0
             }
-    if before.channel and str(before.channel.id) in bdd[str(member.guild.id)]["channels"] \
+    if before.channel and str(before.channel.id) in data[str(member.guild.id)]["channels"] \
             and not len(before.channel.members):
-        bdd[str(member.guild.id)]['channels'].pop(str(before.channel.id))
+        data[str(member.guild.id)]['channels'].pop(str(before.channel.id))
         await before.channel.delete(reason='Last member leave')
 
-    update_json(bdd)
-    update_bdd(bdd)
+    update_json(data)
+    update_bdd(data)
 
 
 # TODO Handle invalid token error in a better way for the user
