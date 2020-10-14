@@ -164,7 +164,7 @@ def help_embed(member):
     return embed
 
 
-@bot.command()
+@bot.group()
 async def set(ctx):
     content = ctx.message.content.split()
     voice = ctx.author.voice
@@ -191,11 +191,8 @@ async def set(ctx):
         await ctx.send(embed=help_embed(ctx.author))
         return
 
-    # subcommand handling is here
-    if content[1] == 'name' and len(content) > 2:
-        await chan.edit(name=" ".join(content[2:]))
-        await ctx.message.channel.send("Name successfully changed.")
-        bdd[guild_id]['channels'][voice]["name"] = " ".join(content[2:])
+    if content[1] == "name":
+    	return
 
     elif content[1] == "owner" and len(ctx.message.mentions):
         bdd[guild_id]['channels'][voice]["owner"] = ctx.message.mentions[0].id
@@ -225,6 +222,36 @@ async def set(ctx):
     update_json(bdd)
     update_bdd(bdd)
 
+@commands.cooldown(1,300,commands.BucketType.member)
+@set.command()
+async def name(ctx):
+    content = ctx.message.content.split()
+    voice = ctx.author.voice
+    member_id = ctx.author.id
+    guild_id = str(ctx.guild.id)
+    
+    if not voice:
+    	return name.reset_cooldown(ctx)
+
+    chan = voice.channel
+    voice = str(voice.channel.id)
+    
+    if not voice in bdd[guild_id]['channels'].keys():
+        return name.reset_cooldown(ctx)
+    
+    if member_id != bdd[guild_id]['channels'][voice]["owner"]:
+        return name.reset_cooldown(ctx)
+    
+    if len(content) > 2:
+        await chan.edit(name=" ".join(content[2:]))
+        await ctx.message.channel.send("Name successfully changed.")
+        bdd[guild_id]['channels'][voice]["name"] = " ".join(content[2:])
+    else:
+    	return name.reset_cooldown(ctx)
+@name.error
+async def on_command_error(ctx,error):
+    if isinstance(error, commands.CommandOnCooldown):
+        await ctx.send(f"You are going too fast ! Please wait {round(error.retry_after)} seconds before retry it.")
 
 # TODO Refactor it
 @bot.event
