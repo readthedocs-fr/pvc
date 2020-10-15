@@ -17,10 +17,10 @@ def update_json(db: dict):
         json.dump(db, file, indent=4)
 
 
-def update_bdd(db: dict):
+def update_data(data: dict):
     with open("data.json", "r") as file:
         for key, value in json.load(file).items():
-            db[key] = value
+            data[key] = value
 
 
 def get_token():
@@ -33,7 +33,7 @@ data = {}
 
 @bot.event
 async def on_ready():
-    update_bdd(data)
+    update_data(data)
 
     print(f"Bot logged as {bot.user.name}")
     for guild in bot.guilds:
@@ -47,7 +47,7 @@ async def on_ready():
 
 @bot.event
 async def on_guild_join(guild):
-    update_bdd(data)
+    update_data(data)
 
     data[str(guild.id)] = {
         "main": None,
@@ -116,7 +116,7 @@ async def setchannel(ctx):
     await ctx.send("Main channel set.")
 
     update_json(data)
-    update_bdd(data)
+    update_data(data)
 
 
 @bot.command()
@@ -126,7 +126,7 @@ async def unsetchannel(ctx):
     await ctx.send("Main channel reset.")
 
     update_json(data)
-    update_bdd(data)
+    update_data(data)
 
 
 def help_embed(member):
@@ -225,7 +225,7 @@ async def _set(ctx):
         data[guild_id]['channels'][voice]["public"] = False
 
     update_json(data)
-    update_bdd(data)
+    update_data(data)
 
 
 @commands.cooldown(1, 300, commands.BucketType.member)
@@ -282,7 +282,7 @@ async def on_voice_state_update(member, before, after):
         await before.channel.delete(reason='Last member leave')
 
     update_json(data)
-    update_bdd(data)
+    update_data(data)
 
 
 # TODO Handle invalid token error in a better way for the user
