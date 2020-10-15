@@ -2,19 +2,20 @@ import discord
 from discord.ext import commands
 import json
 
-bot = commands.Bot(command_prefix="$", help_command=None)
+bot = commands.Bot(command_prefix="?", help_command=None)
 
 
 def format_time(t: int):
     minutes, seconds = divmod(t, 60)
+    text = str(seconds)
     if minutes:
-        return f"You are going too fast ! Please wait {minutes} minutes and {seconds} seconds before retry it."
-    return f"You are going too fast ! Please wait {seconds} seconds before retry it."
+        text = f"{minutes} minutes and {seconds}"
+    return f"You are going too fast ! Please wait {text} seconds before retry it."
 
 
-def update_json(db: dict):
+def update_json(data: dict):
     with open("data.json", "w") as file:
-        json.dump(db, file, indent=4)
+        json.dump(data, file, indent=4)
 
 
 def update_data(data: dict):
@@ -24,7 +25,7 @@ def update_data(data: dict):
 
 
 def get_token():
-    with open("config.json", "r") as file:
+    with open("config.example.json", "r") as file:
         return json.load(file)["BOT_TOKEN"]
 
 
