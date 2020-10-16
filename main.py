@@ -25,7 +25,7 @@ def update_data(data: dict):
 
 
 def get_token():
-    with open("config.example.json", "r") as file:
+    with open("config.json", "r") as file:
         return json.load(file)["BOT_TOKEN"]
 
 
@@ -162,6 +162,12 @@ def help_embed(member):
         inline=False
     )
     embed.add_field(
+        name="__hide/reveal__",
+        value="**Description:** allows you to define the channel as hiden or visible\n"
+              "**Usage:**: `set hide` or `set reveal`",
+        inline=False
+    )
+    embed.add_field(
         name="__help__",
         value="**Description:** Show you this embed\n"
               "**Usage:**: `set help`",
@@ -176,7 +182,7 @@ async def _set(ctx):
     voice = ctx.author.voice
     member_id = ctx.author.id
     guild_id = str(ctx.guild.id)
-    keywords = ["private", "public", "owner", "places", "name"]
+    keywords = ["private", "public", "owner", "places", "name", "hide", "reveal", "invite", "kick"]
 
     if not voice:
         await ctx.send('You must be in your voice channel.')
@@ -185,7 +191,7 @@ async def _set(ctx):
     chan = voice.channel
     voice = str(voice.channel.id)
 
-    if not voice in data[guild_id]['channels'].keys():
+    if voice not in data[guild_id]['channels'].keys():
         await ctx.send('You must be in your voice channel.')
         return
 
@@ -214,16 +220,43 @@ async def _set(ctx):
         await chan.edit(user_limit=places_count)
         await ctx.send("Number of places successfully changed.")
         data[guild_id]['channels'][voice]["places"] = places_count
+        return
+
+    elif content[1] == "reveal":
+        await chan.set_permissions(ctx.guild.default_role, view_channel=True)
+        await ctx.send("The channel is now visible.")
+        data[guild_id]['channels'][voice]["visible"] = True
+        return
+
+    elif content[1] == "hide":
+        await chan.set_permissions(ctx.guild.default_role, view_channel=False)
+        await ctx.send("The channel is now hide.")
+        data[guild_id]['channels'][voice]["visible"] = False
+        return
+
+    elif content[1] == "private":
+        await chan.set_permissions(ctx.guild.default_role, connect=False)
+        await ctx.send("Channel defined as private.")
+        return
 
     elif content[1] == "public":
-        await chan.set_permissions(ctx.guild.default_role, view_channel=True)
+        await chan.set_permissions(ctx.guild.default_role, connect=True)
         await ctx.send("Channel defined as public.")
-        data[guild_id]['channels'][voice]["public"] = True
+        return
+
+    if len(content) < 2 or not len(ctx.message.mentions):
+        await ctx.send("Please mention a valid user.")
+        return
+
+    elif content[1] == "invite":
+        await chan.set_permissions(ctx.message.mentions[0], connect=True)
+        await ctx.send(f"{ctx.message.mentions[0]} is now allowed to connect to the channel.")
 
     else:
-        await chan.set_permissions(ctx.guild.default_role, view_channel=False)
-        await ctx.send("Channel defined as private.")
-        data[guild_id]['channels'][voice]["public"] = False
+        member = ctx.message.mentions[0]
+        await chan.set_permissions(member, connect=False)
+        await member.move_to(None)
+        await ctx.send(f"{member} is now forbidden to connect to the channel.")
 
     update_json(data)
     update_data(data)
@@ -243,7 +276,7 @@ async def name(ctx):
     chan = voice.channel
     voice = str(voice.channel.id)
 
-    if not voice in data[guild_id]['channels'].keys():
+    if voice not in data[guild_id]['channels'].keys():
         return name.reset_cooldown(ctx)
 
     if member_id != data[guild_id]['channels'][voice]["owner"]:
@@ -274,7 +307,7 @@ async def on_voice_state_update(member, before, after):
             data[str(member.guild.id)]["channels"][str(change.id)] = {
                 "owner": member.id,
                 "name": change.name,
-                "public": True,
+                "visible": True,
                 "places": 0
             }
     if before.channel and str(before.channel.id) in data[str(member.guild.id)]["channels"] \
