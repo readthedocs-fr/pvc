@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import json
 
-bot = commands.Bot(command_prefix="?", help_command=None)
+bot = commands.Bot(command_prefix="$", help_command=None)
 
 
 def format_time(t: int):
