@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 import json
-import os
+import os, sys
 import logging
 
 
@@ -14,10 +14,13 @@ data = {}
 bot = commands.Bot(command_prefix="$", help_command=None)
 
 logger = logging.getLogger("pvc bot")
-handler = logging.FileHandler(LOG_PATH, "a")
 logger.setLevel(logging.INFO)
-handler.setFormatter(logging.Formatter(r"%(asctime)s - [%(levelname)s] ~ %(message)s"))
-logger.addHandler(handler)
+file_handler = logging.FileHandler(LOG_PATH, "a")
+file_handler.setFormatter(logging.Formatter(r"%(asctime)s - [%(levelname)s] ~ %(message)s"))
+stream_handler = logging.StreamHandler(sys.stdout)
+stream_handler.setFormatter(logging.Formatter(r"[%(levelname)s] ~ %(message)s"))
+logger.addHandler(file_handler)
+logger.addHandler(stream_handler)
 
 
 def format_time(t: int):
@@ -47,7 +50,6 @@ def get_token():
 async def on_ready():
     update_data(data)
 
-    print(f"Bot logged as {bot.user.name}")
     logger.info(f"Bot logged as {bot.user.name}")
     for guild in bot.guilds:
         if str(guild.id) not in data.keys():
@@ -302,24 +304,31 @@ async def on_command_error(ctx, error):
         await ctx.send(format_time(round(error.retry_after)))
 
 
-# TODO Refactor it
 @bot.event
 async def on_voice_state_update(member, before, after):
-    if after.channel and after.channel.id == data[str(member.guild.id)]['main']:
-        if (before.channel and before.channel.id != data[str(member.guild.id)]['main']) or not before.channel:
+    if after.channel and after.channel.id == data[str(member.guild.id)]['main']: # if the user connects to the set voice channel...
+        if before.channel and str(before.channel.id) in data[str(member.guild.id)]["channels"]: # if the user was in a personnal voice channel before, then don't move it
+            logger.warning("Cannot create new personnal channel for the user while the user is not disconnected.")
+            await member.move_to(before.channel)
+        else:
             category = bot.get_channel(after.channel.category_id)
+            # create a new channel, named after the member name, and move the member to it
             change = await member.guild.create_voice_channel(f"{member.name}'s channel", category=category)
             await member.move_to(change)
+
+            logger.info(f"{member.name} joined and was moved to \"{member.name}'s channel\"")
+            # update the data
             data[str(member.guild.id)]["channels"][str(change.id)] = {
                 "owner": member.id,
                 "name": change.name,
                 "public": True,
                 "places": 0
             }
-    if before.channel and str(before.channel.id) in data[str(member.guild.id)]["channels"] \
-            and not len(before.channel.members):
-        data[str(member.guild.id)]['channels'].pop(str(before.channel.id))
-        await before.channel.delete(reason='Last member leave')
+    elif not after.channel and str(before.channel.id) in data[str(member.guild.id)]["channels"]: # if the user disconnects from a personnal voice channel
+        if not len(before.channel.members): # if there is no more users in the voice channel, delete it
+            data[str(member.guild.id)]['channels'].pop(str(before.channel.id))
+            await before.channel.delete(reason='Last member leave')
+            logger.info(f"Personnal voice channel \"{before.channel.name}\" is empty so it has been deleted.")
 
     update_json(data)
     update_data(data)
@@ -328,5 +337,4 @@ async def on_voice_state_update(member, before, after):
 try:
     bot.run(get_token())
 except discord.errors.LoginFailure:
-    print(f"Could not connect: invalid token error.")
-    logger.critical("Could not connect: invalid token error.")
+    logger.error("Could not connect: invalid token error.")
