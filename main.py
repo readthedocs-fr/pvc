@@ -89,7 +89,7 @@ async def on_guild_remove(guild):
 
 @bot.event
 async def on_error(event, *args, **kwargs):
-    logger.warning(f"Ignoring discord error {event}")
+    logger.warning(f"Ignoring discord error {event}: \"{sys.exc_info()[1]}\"")
 
 
 @bot.event
