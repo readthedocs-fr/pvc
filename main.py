@@ -31,9 +31,9 @@ def format_time(t: int):
     return f"You are going too fast ! Please wait {text} seconds before retry it."
 
 
-def update_json(db: dict):
+def update_json(data: dict):
     with open(DATA_PATH, "w") as file:
-        json.dump(db, file, indent=4)
+        json.dump(data, file, indent=4)
 
 
 def update_data(data: dict):
