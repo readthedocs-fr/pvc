@@ -320,7 +320,7 @@ async def on_voice_state_update(member, before, after):
             "public": True,
             "places": 0
         }
-    if str(before.channel.id) in data[str(member.guild.id)]["channels"]: # if the user disconnects from a personnal voice channel
+    if before.channel and str(before.channel.id) in data[str(member.guild.id)]["channels"]: # if the user disconnects from a personnal voice channel
         if not len(before.channel.members): # if there is no more users in the voice channel, delete it
             data[str(member.guild.id)]['channels'].pop(str(before.channel.id))
             await before.channel.delete(reason='Last member leave')
