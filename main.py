@@ -307,24 +307,20 @@ async def on_command_error(ctx, error):
 @bot.event
 async def on_voice_state_update(member, before, after):
     if after.channel and after.channel.id == data[str(member.guild.id)]['main']: # if the user connects to the set voice channel...
-        if before.channel and str(before.channel.id) in data[str(member.guild.id)]["channels"]: # if the user was in a personnal voice channel before, then don't move it
-            logger.warning("Cannot create new personnal channel for the user while the user is not disconnected.")
-            await member.move_to(before.channel)
-        else:
-            category = bot.get_channel(after.channel.category_id)
-            # create a new channel, named after the member name, and move the member to it
-            change = await member.guild.create_voice_channel(f"{member.name}'s channel", category=category)
-            await member.move_to(change)
+        category = bot.get_channel(after.channel.category_id)
+        # create a new channel, named after the member name, and move the member to it
+        change = await member.guild.create_voice_channel(f"{member.name}'s channel", category=category)
+        await member.move_to(change)
 
-            logger.info(f"{member.name} joined and was moved to \"{member.name}'s channel\"")
-            # update the data
-            data[str(member.guild.id)]["channels"][str(change.id)] = {
-                "owner": member.id,
-                "name": change.name,
-                "public": True,
-                "places": 0
-            }
-    elif str(before.channel.id) in data[str(member.guild.id)]["channels"]: # if the user disconnects from a personnal voice channel
+        logger.info(f"{member.name} joined and was moved to \"{member.name}'s channel\"")
+        # update the data
+        data[str(member.guild.id)]["channels"][str(change.id)] = {
+            "owner": member.id,
+            "name": change.name,
+            "public": True,
+            "places": 0
+        }
+    if str(before.channel.id) in data[str(member.guild.id)]["channels"]: # if the user disconnects from a personnal voice channel
         if not len(before.channel.members): # if there is no more users in the voice channel, delete it
             data[str(member.guild.id)]['channels'].pop(str(before.channel.id))
             await before.channel.delete(reason='Last member leave')
