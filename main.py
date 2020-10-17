@@ -206,7 +206,7 @@ def help_embed(member):
     )
     embed.add_field(
         name="__hide/reveal__",
-        value="**Description:** allows you to define the channel as hiden or visible\n"
+        value="**Description:** allows you to define the channel as hidden or visible\n"
               "**Usage**: `set hide` or `set reveal`",
         inline=False
     )
