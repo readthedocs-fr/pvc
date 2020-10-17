@@ -298,7 +298,7 @@ async def _set(ctx):
         return
 
     elif content[1] == "invite":
-        await chan.set_permissions(ctx.message.mentions[0], connect=True)
+        await chan.set_permissions(ctx.message.mentions[0], connect=True, view_channel=True)
         await ctx.send(f"{ctx.message.mentions[0]} is now allowed to connect to the channel.")
 
     else:
@@ -351,7 +351,9 @@ async def on_voice_state_update(member, before, after):
     if after.channel and after.channel.id == data[str(member.guild.id)]['main']:  # if the user connects to the set voice channel...
         category = bot.get_channel(after.channel.category_id)
         # create a new channel, named after the member name, set permissions, and move the member to it
-        change = await member.guild.create_voice_channel(f"{member.name}'s channel", category=category)
+        overwrite = discord.PermissionOverwrite(manage_permissions=True, connect=True,
+                                                manage_channels=True, view_channel=True, move_member=True)
+        change = await member.guild.create_voice_channel(f"{member.name}'s channel", overwrites={bot.user: overwrite}, category=category)
         await change.set_permissions(member, view_channel=True, connect=True)
         await member.move_to(change)
 
@@ -364,7 +366,7 @@ async def on_voice_state_update(member, before, after):
             "places": 0
         }
     if before.channel and str(before.channel.id) in data[str(member.guild.id)]["channels"]:  # if the user disconnects from a personnal voice channel
-        if not len(before.channel.members): # if there is no more users in the voice channel, delete it
+        if not len(before.channel.members):  # if there is no more users in the voice channel, delete it
             data[str(member.guild.id)]['channels'].pop(str(before.channel.id))
             await before.channel.delete(reason='Last member leave')
             logger.info(f"Personnal voice channel \"{before.channel.name}\" is empty so it has been deleted.")
