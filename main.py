@@ -252,6 +252,7 @@ async def _set(ctx):
         await ctx.send(embed=help_embed(ctx.author))
         return
 
+# wtf?
     if content[1] == "name":
         return
 
@@ -269,33 +270,29 @@ async def _set(ctx):
         await chan.edit(user_limit=places_count)
         await ctx.send("Number of places successfully changed.")
         data[guild_id]['channels'][voice]["places"] = places_count
-        return
 
     elif content[1] == "reveal":
         await chan.set_permissions(ctx.guild.default_role, view_channel=True)
         await ctx.send("The channel is now visible.")
         data[guild_id]['channels'][voice]["visible"] = True
-        return
 
     elif content[1] == "hide":
         await chan.set_permissions(ctx.guild.default_role, view_channel=False)
         await ctx.send("The channel is now hide.")
         data[guild_id]['channels'][voice]["visible"] = False
-        return
 
     elif content[1] == "private":
         await chan.set_permissions(ctx.guild.default_role, connect=False)
         await ctx.send("Channel defined as private.")
-        return
 
     elif content[1] == "public":
         await chan.set_permissions(ctx.guild.default_role, connect=True)
         await ctx.send("Channel defined as public.")
-        return
 
-    if len(content) < 2 or not len(ctx.message.mentions):
-        await ctx.send("Please mention a valid user.")
-        return
+# this is not in the right place
+#    if len(content) < 2 or not len(ctx.message.mentions):
+#        await ctx.send("Please mention a valid user.")
+#        return
 
     elif content[1] == "invite":
         await chan.set_permissions(ctx.message.mentions[0], connect=True, view_channel=True)
