@@ -1,7 +1,8 @@
 import discord
 from discord.ext import commands
 import json
-import os, sys
+import os
+import sys
 import logging
 
 
@@ -90,6 +91,7 @@ async def on_guild_remove(guild):
 async def on_error(event, *args, **kwargs):
     logger.warning(f"Ignoring discord error {event}")
 
+
 @bot.event
 async def on_command_error(ctx, error):
     logger.warning(f"Ignoring discord error: {error}")
@@ -104,22 +106,22 @@ async def _help(ctx):
     embed.set_thumbnail(url=f"https://cdn.discordapp.com/avatars/{bot.user.id}/{bot.user.avatar}.png?size=1024")
     embed.add_field(
         name="__help__",
-        value="**Description:** Show you this message.\n**Usage:**: `help`",
+        value="**Description:** Show you this message.\n**Usage**: `help`",
         inline=False
     )
     embed.add_field(
         name="__setchannel__",
-        value="**Description:** allows you to assign a main channel.\n**Usage:**: `setchannel [channel_id]`",
+        value="**Description:** allows you to assign a main channel.\n**Usage**: `setchannel [channel_id]`",
         inline=False
     )
     embed.add_field(
         name="__unsetchannel__",
-        value="**Description:** reset the main channel.\n**Usage:**: `unsetchannel`",
+        value="**Description:** reset the main channel.\n**Usage**: `unsetchannel`",
         inline=False
     )
     embed.add_field(
         name="__set__",
-        value="**Description:** allows you to modify your channel once inside.\n**Usage:**: `set [arg]`",
+        value="**Description:** allows you to modify your channel once inside.\n**Usage**: `set [arg]`",
         inline=False
     )
     await ctx.send(embed=embed)
@@ -173,45 +175,51 @@ async def unsetchannel(ctx):
 
 def help_embed(member):
     embed = discord.Embed(
-        title="Setings help",
+        title="Settings help",
         color=discord.Color(5027441)
     )
     embed.set_thumbnail(url=f"https://cdn.discordapp.com/avatars/{member.id}/{member.avatar}.png?size=1024")
     embed.add_field(
         name="__owner__",
         value="**Description:** allows you to change the owner\n"
-              "**Usage:**: `set owner [mention]`",
+              "**Usage**: `set owner [mention]`",
         inline=False
     )
     embed.add_field(
         name="__name__",
         value="**Description:** allows you to change the channel's name\n"
-              "**Usage:**: `set name [name]`",
+              "**Usage**: `set name [name]`",
         inline=False
     )
     embed.add_field(
         name="__places__",
         value="**Description:** allows you to change the number of places in the channel.\n"
               "Take a number between 0 to 99, 0 mean no limit.\n"
-              "**Usage:**: `set places [int]`",
+              "**Usage**: `set places [int]`",
         inline=False
     )
     embed.add_field(
         name="__public/private__",
         value="**Description:** allows you to define the channel as public or private\n"
-              "**Usage:**: `set private` or `set public`",
+              "**Usage**: `set private` or `set public`",
         inline=False
     )
     embed.add_field(
         name="__hide/reveal__",
         value="**Description:** allows you to define the channel as hiden or visible\n"
-              "**Usage:**: `set hide` or `set reveal`",
+              "**Usage**: `set hide` or `set reveal`",
+        inline=False
+    )
+    embed.add_field(
+        name="__invite/kick__",
+        value="**Description:** allows you to invite or kick somebody from the channel\n"
+              "**Usage**: `set invite [mention]` or `set kick [mention]`",
         inline=False
     )
     embed.add_field(
         name="__help__",
         value="**Description:** Show you this embed\n"
-              "**Usage:**: `set help`",
+              "**Usage**: `set help`",
         inline=False
     )
     return embed
@@ -340,10 +348,11 @@ async def on_command_error(ctx, error):
 
 @bot.event
 async def on_voice_state_update(member, before, after):
-    if after.channel and after.channel.id == data[str(member.guild.id)]['main']: # if the user connects to the set voice channel...
+    if after.channel and after.channel.id == data[str(member.guild.id)]['main']:  # if the user connects to the set voice channel...
         category = bot.get_channel(after.channel.category_id)
-        # create a new channel, named after the member name, and move the member to it
+        # create a new channel, named after the member name, set permissions, and move the member to it
         change = await member.guild.create_voice_channel(f"{member.name}'s channel", category=category)
+        await change.set_permissions(member, view_channel=True, connect=True)
         await member.move_to(change)
 
         logger.info(f"{member.name} joined and was moved to \"{member.name}'s channel\"")
@@ -354,7 +363,7 @@ async def on_voice_state_update(member, before, after):
             "public": True,
             "places": 0
         }
-    if before.channel and str(before.channel.id) in data[str(member.guild.id)]["channels"]: # if the user disconnects from a personnal voice channel
+    if before.channel and str(before.channel.id) in data[str(member.guild.id)]["channels"]:  # if the user disconnects from a personnal voice channel
         if not len(before.channel.members): # if there is no more users in the voice channel, delete it
             data[str(member.guild.id)]['channels'].pop(str(before.channel.id))
             await before.channel.delete(reason='Last member leave')
