@@ -1,8 +1,26 @@
 import discord
 from discord.ext import commands
 import json
+import os, sys
+import logging
 
+
+PATH = os.path.dirname(__file__)
+DATA_PATH = os.path.join(PATH, "data.json")
+CONFIG_PATH = os.path.join(PATH, "config.json")
+LOG_PATH = os.path.join(PATH, ".logs")
+
+data = {}
 bot = commands.Bot(command_prefix="$", help_command=None)
+
+logger = logging.getLogger("pvc bot")
+logger.setLevel(logging.INFO)
+file_handler = logging.FileHandler(LOG_PATH, "a")
+file_handler.setFormatter(logging.Formatter(r"%(asctime)s - [%(levelname)s] ~ %(message)s"))
+stream_handler = logging.StreamHandler(sys.stdout)
+stream_handler.setFormatter(logging.Formatter(r"[%(levelname)s] ~ %(message)s"))
+logger.addHandler(file_handler)
+logger.addHandler(stream_handler)
 
 
 def format_time(t: int):
@@ -14,29 +32,26 @@ def format_time(t: int):
 
 
 def update_json(data: dict):
-    with open("data.json", "w") as file:
+    with open(DATA_PATH, "w") as file:
         json.dump(data, file, indent=4)
 
 
 def update_data(data: dict):
-    with open("data.json", "r") as file:
+    with open(DATA_PATH, "r") as file:
         for key, value in json.load(file).items():
             data[key] = value
 
 
 def get_token():
-    with open("config.json", "r") as file:
+    with open(CONFIG_PATH, "r") as file:
         return json.load(file)["BOT_TOKEN"]
-
-
-data = {}
 
 
 @bot.event
 async def on_ready():
     update_data(data)
 
-    print(f"Bot logged as {bot.user.name}")
+    logger.info(f"Bot logged as {bot.user.name}")
     for guild in bot.guilds:
         if str(guild.id) not in data.keys():
             data[str(guild.id)] = {"main": None, "channels": {}}
@@ -58,6 +73,26 @@ async def on_guild_join(guild):
     await bot.change_presence(activity=game)
 
     update_json(data)
+
+
+@bot.event
+async def on_guild_remove(guild):
+    update_data(data)
+
+    del data[str(guild.id)]
+    game = discord.Game(f"Manage {len(bot.guilds)} servers")
+    await bot.change_presence(activity=game)
+
+    update_json(data)
+
+
+@bot.event
+async def on_error(event, *args, **kwargs):
+    logger.warning(f"Ignoring discord error {event}")
+
+@bot.event
+async def on_command_error(ctx, error):
+    logger.warning(f"Ignoring discord error: {error}")
 
 
 @bot.command(name="help")
@@ -113,6 +148,10 @@ async def setchannel(ctx):
         await ctx.send("Please use a voice channel id.")
         return
 
+    if data[str(ctx.guild.id)]["main"] is not None:
+        logger.warning(f"Channel already set {data[str(ctx.guild.id)]['main']}.")
+    logger.info(f"Set main channel <{channel.name}.{channel.id}>")
+
     data[str(ctx.guild.id)]['main'] = channel.id
     await ctx.send("Main channel set.")
 
@@ -125,6 +164,8 @@ async def setchannel(ctx):
 async def unsetchannel(ctx):
     data[str(ctx.guild.id)]['main'] = None
     await ctx.send("Main channel reset.")
+
+    logger.info("Main channel reset.")
 
     update_json(data)
     update_data(data)
@@ -292,32 +333,38 @@ async def name(ctx):
 
 @name.error
 async def on_command_error(ctx, error):
+    logger.error(f"Error occured: {error}")
     if isinstance(error, commands.CommandOnCooldown):
         await ctx.send(format_time(round(error.retry_after)))
 
 
-# TODO Refactor it
 @bot.event
 async def on_voice_state_update(member, before, after):
-    if after.channel and after.channel.id == data[str(member.guild.id)]['main']:
-        if (before.channel and before.channel.id != data[str(member.guild.id)]['main']) or not before.channel:
-            category = bot.get_channel(after.channel.category_id)
-            change = await member.guild.create_voice_channel(f"{member.name}'s channel", category=category)
-            await member.move_to(change)
-            data[str(member.guild.id)]["channels"][str(change.id)] = {
-                "owner": member.id,
-                "name": change.name,
-                "visible": True,
-                "places": 0
-            }
-    if before.channel and str(before.channel.id) in data[str(member.guild.id)]["channels"] \
-            and not len(before.channel.members):
-        data[str(member.guild.id)]['channels'].pop(str(before.channel.id))
-        await before.channel.delete(reason='Last member leave')
+    if after.channel and after.channel.id == data[str(member.guild.id)]['main']: # if the user connects to the set voice channel...
+        category = bot.get_channel(after.channel.category_id)
+        # create a new channel, named after the member name, and move the member to it
+        change = await member.guild.create_voice_channel(f"{member.name}'s channel", category=category)
+        await member.move_to(change)
+
+        logger.info(f"{member.name} joined and was moved to \"{member.name}'s channel\"")
+        # update the data
+        data[str(member.guild.id)]["channels"][str(change.id)] = {
+            "owner": member.id,
+            "name": change.name,
+            "public": True,
+            "places": 0
+        }
+    if before.channel and str(before.channel.id) in data[str(member.guild.id)]["channels"]: # if the user disconnects from a personnal voice channel
+        if not len(before.channel.members): # if there is no more users in the voice channel, delete it
+            data[str(member.guild.id)]['channels'].pop(str(before.channel.id))
+            await before.channel.delete(reason='Last member leave')
+            logger.info(f"Personnal voice channel \"{before.channel.name}\" is empty so it has been deleted.")
 
     update_json(data)
     update_data(data)
 
 
-# TODO Handle invalid token error in a better way for the user
-bot.run(get_token())
+try:
+    bot.run(get_token())
+except discord.errors.LoginFailure:
+    logger.error("Could not connect: invalid token error.")
