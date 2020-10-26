@@ -122,7 +122,9 @@ class ConfigChannel(commands.Cog):
         if len(ctx.message.content.split()) < 2 or not len(ctx.message.mentions):
             await ctx.send("Please mention a valid user.")
             return
-
+        if ctx.mentions[0] not in ctx.author.voice.channel.members:
+            await ctx.send("User must be in your channel.")
+            return
         member = ctx.message.mentions[0]
         await ctx.author.voice.channel.set_permissions(member, connect=False)
         await member.move_to(None)

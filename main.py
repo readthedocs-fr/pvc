@@ -12,7 +12,7 @@ PATH = os.path.dirname(__file__)
 CONFIG_PATH = os.path.join(PATH, "config.json")
 
 data = {}
-bot = commands.Bot(command_prefix="!", help_command=None)
+bot = commands.Bot(command_prefix="$", help_command=None)
 
 logger = create_logger()
 
@@ -73,7 +73,7 @@ async def on_command_error(ctx, error):
 
 @bot.command(name="help")
 async def _help(ctx):
-    await ctx.send(embed=help_embed)
+    await ctx.send(embed=help_embed(bot))
 
 
 @bot.event
