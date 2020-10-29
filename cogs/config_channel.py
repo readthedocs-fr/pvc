@@ -140,6 +140,17 @@ class ConfigChannel(commands.Cog):
             return
         await mention.move_to(None)
 
+    @_set.command()
+    async def deny(self, ctx, mention: discord.Member = None):
+        perm = self.perm(ctx)
+        if perm:
+            return await ctx.send(perm)
+        if not mention:
+            await ctx.send("Please mention a valid user.")
+            return
+        await ctx.author.voice.channel.set_permissions(mention, connect=False)
+        await ctx.send(f"{mention} is now forbidden to connect to the channel.")
+
     @name.error
     async def on_command_error(self, ctx, error):
         self.logger.error(f"Error occured: {error}")
