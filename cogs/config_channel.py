@@ -1,4 +1,5 @@
 from discord.ext import commands
+import discord
 from utils import update_data, update_json, config_help_embed
 
 
@@ -16,35 +17,26 @@ class ConfigChannel(commands.Cog):
         self.data = data
         self.logger = logger
 
+    def perm(self, ctx):
+        if not ctx.author.voice or str(ctx.author.voice.channel.id) not in self.data[str(ctx.guild.id)]["channels"].keys():
+            return 'You must be in your voice channel.'
+        if ctx.author.id != self.data[str(ctx.guild.id)]['channels'][str(ctx.author.voice.channel.id)]:
+            return "You don't have permission to do this !"
+
     @commands.group(name="set")
     async def _set(self, ctx):
         update_data(self.data)
         content = ctx.message.content.split()
-        voice = ctx.author.voice
-        guild_id = str(ctx.guild.id)
-        member_id = ctx.author.id
         keywords = ["private", "public", "owner", "places", "name", "hide", "reveal", "invite", "kick"]
-
-        if not voice:
-            await ctx.send("You must be in your voice channel.")
-            return
-
-        voice_id = str(voice.channel.id)
-
-        if voice_id not in self.data[guild_id]["channels"].keys():
-            await ctx.send('You must be in your voice channel.')
-            return
-
-        if member_id != self.data[guild_id]['channels'][voice_id]:
-            await ctx.send("You don't have permission to do this !")
-            return
-
         if len(content) <= 1 or content[1] not in keywords:
             await ctx.send(embed=config_help_embed(ctx.author))
 
     @commands.cooldown(1, 300, commands.BucketType.member)
     @_set.command()
     async def name(self, ctx):
+        perm = self.perm(ctx)
+        if perm:
+            return await ctx.send(perm)
         update_data(self.data)
         content = ctx.message.content.split()
         voice = ctx.author.voice
@@ -70,6 +62,9 @@ class ConfigChannel(commands.Cog):
 
     @_set.command()
     async def owner(self, ctx):
+        perm = self.perm(ctx)
+        if perm:
+            return await ctx.send(perm)
         update_data(self.data)
         guild_id = str(ctx.guild.id)
         if len(ctx.message.mentions):
@@ -80,6 +75,9 @@ class ConfigChannel(commands.Cog):
 
     @_set.command()
     async def places(self, ctx):
+        perm = self.perm(ctx)
+        if perm:
+            return await ctx.send(perm)
         content = ctx.message.content.split()
         if not content[2].isdigit() or not 0 <= int(content[2]) < 100:
             await ctx.send("Please use a number between 0 and 99.")
@@ -90,26 +88,41 @@ class ConfigChannel(commands.Cog):
 
     @_set.command()
     async def reveal(self, ctx):
+        perm = self.perm(ctx)
+        if perm:
+            return await ctx.send(perm)
         await ctx.author.voice.channel.set_permissions(ctx.guild.default_role, view_channel=True)
         await ctx.send("The channel is now visible.")
 
     @_set.command()
     async def hide(self, ctx):
+        perm = self.perm(ctx)
+        if perm:
+            return await ctx.send(perm)
         await ctx.author.voice.channel.set_permissions(ctx.guild.default_role, view_channel=False)
         await ctx.send("The channel is now hide.")
 
     @_set.command()
     async def public(self, ctx):
+        perm = self.perm(ctx)
+        if perm:
+            return await ctx.send(perm)
         await ctx.author.voice.channel.set_permissions(ctx.guild.default_role, connect=True)
         await ctx.send("Channel defined as public.")
 
     @_set.command()
     async def private(self, ctx):
+        perm = self.perm(ctx)
+        if perm:
+            return await ctx.send(perm)
         await ctx.author.voice.channel.set_permissions(ctx.guild.default_role, connect=False)
         await ctx.send("Channel defined as private.")
 
     @_set.command()
     async def invite(self, ctx):
+        perm = self.perm(ctx)
+        if perm:
+            return await ctx.send(perm)
         if len(ctx.message.content.split()) < 2 or not len(ctx.message.mentions):
             await ctx.send("Please mention a valid user.")
             return
@@ -118,17 +131,14 @@ class ConfigChannel(commands.Cog):
         await ctx.send(f"{ctx.message.mentions[0]} is now allowed to connect to the channel.")
 
     @_set.command()
-    async def kick(self, ctx):
-        if len(ctx.message.content.split()) < 2 or not len(ctx.message.mentions):
-            await ctx.send("Please mention a valid user.")
-            return
-        if ctx.mentions[0] not in ctx.author.voice.channel.members:
+    async def kick(self, ctx, mention: discord.Member = None):
+        perm = self.perm(ctx)
+        if perm:
+            return await ctx.send(perm)
+        if not mention.voice or mention.voice.channel != ctx.author.voice.channel:
             await ctx.send("User must be in your channel.")
             return
-        member = ctx.message.mentions[0]
-        await ctx.author.voice.channel.set_permissions(member, connect=False)
-        await member.move_to(None)
-        await ctx.send(f"{member} is now forbidden to connect to the channel.")
+        await mention.move_to(None)
 
     @name.error
     async def on_command_error(self, ctx, error):
