@@ -100,7 +100,7 @@ class ConfigChannel(commands.Cog):
         if perm:
             return await ctx.send(perm)
         await ctx.author.voice.channel.set_permissions(ctx.guild.default_role, view_channel=False)
-        await ctx.send("The channel is now hide.")
+        await ctx.send("The channel is now hidden.")
 
     @_set.command()
     async def public(self, ctx):
