@@ -34,6 +34,11 @@ async def on_ready():
     await bot.change_presence(activity=game)
 
     update_json(data)
+    
+    # handling the existence of the data.json file
+    if not os.path.exists('data.json'):
+    with open('data.json', 'w') as data:
+        data.write('{}')
 
 
 @bot.event
@@ -81,11 +86,9 @@ async def on_voice_state_update(member, before, after):
     # if the user connects to the set voice channel...
     if after.channel and after.channel.id == data[str(member.guild.id)]['main']:
         category = bot.get_channel(after.channel.category_id)
+        
         # create a new channel, named after the member name, set permissions, and move the member to it
-        overwrite = discord.PermissionOverwrite(manage_permissions=True, connect=True,
-                                                manage_channels=True, view_channel=True, move_members=True)
-        change = await member.guild.create_voice_channel(f"{member.name}'s channel",
-                                                         overwrites={bot.user: overwrite}, category=category)
+        change = await member.guild.create_voice_channel(f"{member.name}'s channel", category=category)
         await change.set_permissions(member, view_channel=True, connect=True)
         await member.move_to(change)
 
