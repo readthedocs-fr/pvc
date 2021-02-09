@@ -37,8 +37,8 @@ async def on_ready():
     
     # handling the existence of the data.json file
     if not os.path.exists('data.json'):
-    with open('data.json', 'w') as data:
-        data.write('{}')
+        with open('data.json', 'w') as data:
+            data.write('{}')
 
 
 @bot.event
