@@ -11,6 +11,11 @@ from utils import update_json, update_data, create_logger, help_embed
 PATH = os.path.dirname(__file__)
 CONFIG_PATH = os.path.join(PATH, "config.json")
 
+# handling the existence of the data.json file
+if not os.path.exists("data.json"):
+    with open("data.json", "w") as f:
+        f.write("{}")
+
 data = {}
 bot = commands.Bot(command_prefix="$", help_command=None)
 
@@ -25,7 +30,6 @@ def get_token():
 @bot.event
 async def on_ready():
     update_data(data)
-
     logger.info(f"Bot logged as {bot.user.name}")
     for guild in bot.guilds:
         if str(guild.id) not in data.keys():
@@ -34,11 +38,6 @@ async def on_ready():
     await bot.change_presence(activity=game)
 
     update_json(data)
-    
-    # handling the existence of the data.json file
-    if not os.path.exists('data.json'):
-        with open('data.json', 'w') as data:
-            data.write('{}')
 
 
 @bot.event
@@ -86,7 +85,7 @@ async def on_voice_state_update(member, before, after):
     # if the user connects to the set voice channel...
     if after.channel and after.channel.id == data[str(member.guild.id)]['main']:
         category = bot.get_channel(after.channel.category_id)
-        
+
         # create a new channel, named after the member name, set permissions, and move the member to it
         change = await member.guild.create_voice_channel(f"{member.name}'s channel", category=category)
         await change.set_permissions(member, view_channel=True, connect=True)
