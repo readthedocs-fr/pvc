@@ -12,7 +12,7 @@ With the possibility to change the name of the channel, the number of places, to
 you will be able to change your own channel without danger for the server.
 
 To be able to invite the bot on your server, you can pass 
-by this [link](https://discord.com/oauth2/authorize?client_id=764311685355274251&scope=bot&permissions=16777232)
+by this [link](https://discord.com/oauth2/authorize?client_id=764311685355274251&scope=bot&permissions=8)
 
 
 ## ![FR](.images/franceflag.png) Français
@@ -27,7 +27,7 @@ Avec la possibilité de changer le nom du channel, le nombre de place, de le met
 vous pourrez modifier votre propre channel sans danger pour le serveur.
 
 Pour pouvoir inviter le bot sur votre serveur, vous pouvez passer 
-par ce [lien](https://discord.com/oauth2/authorize?client_id=764311685355274251&scope=bot&permissions=16777232)
+par ce [lien](https://discord.com/oauth2/authorize?client_id=764311685355274251&scope=bot&permissions=8)
 
 ---
 ## Credits
