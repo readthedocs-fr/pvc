@@ -27,7 +27,7 @@ class ConfigChannel(commands.Cog):
     async def _set(self, ctx):
         update_data(self.data)
         content = ctx.message.content.split()
-        keywords = ["private", "public", "owner", "places", "name", "hide", "reveal", "invite", "kick","ban"]
+        keywords = ["private", "public", "owner", "places", "name", "hide", "reveal", "invite", "kick","ban","unban"]
         if len(content) <= 1 or content[1] not in keywords:
             await ctx.send(embed=config_help_embed(ctx.author))
 
@@ -150,6 +150,19 @@ class ConfigChannel(commands.Cog):
        
         await mention.move_to(None)
 
+    @_set.command()
+    async def unban(self, ctx, mention: discord.Member = None):
+        perm = self.perm(ctx)
+        await ctx.author.voice.channel.set_permissions(mention,connect=True)
+        await ctx.send(f"{mention} has been unbanned from {ctx.author.voice.channel}")
+        if perm:
+            return await ctx.send(perm)
+        if not mention.voice or mention.voice.channel != ctx.author.voice.channel:
+        await ctx.send("User must be in your channel.")
+        return
+
+        
+       
     @name.error
     async def on_command_error(self, ctx, error):
         self.logger.error(f"Error occured: {error}")
