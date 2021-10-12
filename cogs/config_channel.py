@@ -160,9 +160,6 @@ class ConfigChannel(commands.Cog):
         if perm:
             return await ctx.send(perm)
         
-
-        
-       
     @name.error
     async def on_command_error(self, ctx, error):
         self.logger.error(f"Error occured: {error}")
