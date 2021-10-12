@@ -155,7 +155,7 @@ class ConfigChannel(commands.Cog):
         perm = self.perm(ctx)
         if perm:
             return await ctx.send(perm)
-        await ctx.author.voice.channel.set_permissions(mention,connect=True)
+        await ctx.author.voice.channel.set_permissions(mention, connect=True)
         await ctx.send(f"{mention} has been unbanned from {ctx.author.voice.channel}")
         if perm:
             return await ctx.send(perm)
