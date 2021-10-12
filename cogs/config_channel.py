@@ -153,13 +153,13 @@ class ConfigChannel(commands.Cog):
     @_set.command()
     async def unban(self, ctx, mention: discord.Member = None):
         perm = self.perm(ctx)
+        if perm:
+            return await ctx.send(perm)
         await ctx.author.voice.channel.set_permissions(mention,connect=True)
         await ctx.send(f"{mention} has been unbanned from {ctx.author.voice.channel}")
         if perm:
             return await ctx.send(perm)
-        if not mention.voice or mention.voice.channel != ctx.author.voice.channel:
-        await ctx.send("User must be in your channel.")
-        return
+        
 
         
        
