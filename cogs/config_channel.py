@@ -27,7 +27,7 @@ class ConfigChannel(commands.Cog):
     async def _set(self, ctx):
         update_data(self.data)
         content = ctx.message.content.split()
-        keywords = ["private", "public", "owner", "places", "name", "hide", "reveal", "invite", "kick"]
+        keywords = ["private", "public", "owner", "places", "name", "hide", "reveal", "invite", "kick","ban"]
         if len(content) <= 1 or content[1] not in keywords:
             await ctx.send(embed=config_help_embed(ctx.author))
 
@@ -138,6 +138,16 @@ class ConfigChannel(commands.Cog):
         if not mention.voice or mention.voice.channel != ctx.author.voice.channel:
             await ctx.send("User must be in your channel.")
             return
+        await mention.move_to(None)
+
+    @_set.command()
+    async def ban(self, ctx, mention: discord.Member = None):
+        perm = self.perm(ctx)
+        await ctx.author.voice.channel.set_permissions(mention,connect=False)
+        await ctx.send(f"{mention} has been banned from {ctx.author.voice.channel}")
+        if perm:
+            return await ctx.send(perm)
+       
         await mention.move_to(None)
 
     @name.error
