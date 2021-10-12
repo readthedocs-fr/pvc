@@ -143,7 +143,7 @@ class ConfigChannel(commands.Cog):
     @_set.command()
     async def ban(self, ctx, mention: discord.Member = None):
         perm = self.perm(ctx)
-        await ctx.author.voice.channel.set_permissions(mention,connect=False)
+        await ctx.author.voice.channel.set_permissions(mention, connect=False)
         await ctx.send(f"{mention} has been banned from {ctx.author.voice.channel}")
         if perm:
             return await ctx.send(perm)
