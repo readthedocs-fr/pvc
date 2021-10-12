@@ -27,7 +27,7 @@ class ConfigChannel(commands.Cog):
     async def _set(self, ctx):
         update_data(self.data)
         content = ctx.message.content.split()
-        keywords = ["private", "public", "owner", "places", "name", "hide", "reveal", "invite", "kick","ban","unban"]
+        keywords = ["private", "public", "owner", "places", "name", "hide", "reveal", "invite", "kick", "ban", "unban"]
         if len(content) <= 1 or content[1] not in keywords:
             await ctx.send(embed=config_help_embed(ctx.author))
 
