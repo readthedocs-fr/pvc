@@ -76,6 +76,12 @@ def config_help_embed(member):
         inline=False
     )
     embed.add_field(
+        name="__ban/unban__",
+        value="**Description:** allows you to ban or unban somebody from the channel\n"
+              "**Usage**: `set ban [mention]` or `set unban [mention]`",
+        inline=False
+    )
+    embed.add_field(
         name="__help__",
         value="**Description:** Show you this embed\n"
               "**Usage**: `set help`",
