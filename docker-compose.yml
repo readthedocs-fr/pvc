@@ -1,0 +1,10 @@
+version: "3.9"
+image: pvc-bot
+volumes:
+  - type: bind
+    source: ./config.json
+    target: ./config.json
+    read_only: true
+  - type: bind
+    source: ./data.json
+    target: ./data.json
