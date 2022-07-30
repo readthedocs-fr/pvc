@@ -1,0 +1,12 @@
+version: "3.7"
+services:
+  pvc:
+    image: pvc-bot
+    volumes:
+     - type: bind
+       source: ./config.json
+       target: /pvc-bot/config.json
+       read_only: true
+     - type: bind
+       source: ./data.json
+       target: /pvc-bot/data.json

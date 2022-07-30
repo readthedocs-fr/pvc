@@ -1,0 +1,12 @@
+.git/
+.images/
+.resources/
+
+.dockerignore
+.gitignore
+config.example.json
+config.json
+data.json
+docker-compose.yml
+Dockerfile
+README.md
